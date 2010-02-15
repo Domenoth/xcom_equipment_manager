@@ -13,7 +13,7 @@
 using namespace std;
 
 AutoEquipUi::AutoEquipUi() {
-  action_category = "loadout_category";
+  action_category = "loadout_blocks_category";
   master_soldier_list = MasterSoldierItems();
   action_token = NULL;
   item_cursor = 1;
@@ -48,7 +48,7 @@ void AutoEquipUi::display_inventory() {
       if( temp_total_count > 0 && ++skipped > items_offset ) {
         memcpy( &screen_buffer[beginning_of_line], "[ ]", 3 );
         if( item_cursor == line_number ) {
-	  selected_item_id = current_item_id;
+          selected_item_id = current_item_id;
           screen_buffer[beginning_of_line + 1] = 'x';
         }
         screen_buffer[beginning_of_line + 5] = char( ( temp_total_count / 10 + 0x30 ) );
@@ -101,8 +101,17 @@ void AutoEquipUi::display_soldiers() {
   screen_buffer[AUTO_EQUIP_UI_MAX_SCREEN_SIZE] = NULL;
 }
 
+void AutoEquipUi::display_loadout_blocks() {
+  action_category = "loadout_blocks_category";
+  display_loadout();
+}
+
+void AutoEquipUi::display_loadout_slots() {
+  action_category = "loadout_slots_category";
+  display_loadout();
+}
+
 void AutoEquipUi::display_loadout() {
-  action_category = "loadout_category";
   reset_screen_buffer();
   draw_right_shoulder();
   draw_left_shoulder();
@@ -235,6 +244,15 @@ void AutoEquipUi::place_cursor_in_backpack() {
 }
 
 void AutoEquipUi::place_cursor_in_belt() {
+  int column = BELT_COLUMN + 2;
+  if( loadout_cursor < 4 ) {
+    place_cursor( BELT_ROW + 1, column + loadout_cursor * 4 );
+  } else {
+    if( loadout_cursor == 5 ) {
+      column += 12;
+    }
+    place_cursor( BELT_ROW + 4, column );
+  }
 }
 
 void AutoEquipUi::place_cursor( int row, int column ) {
@@ -247,8 +265,10 @@ void AutoEquipUi::route_category() {
     choose_inventory_action();
   } else if ( action_category == "soldier_category" ) {
     choose_soldier_action();
-  } else if ( action_category == "loadout_category" ) {
-    choose_loadout_action();
+  } else if ( action_category == "loadout_blocks_category" ) {
+    choose_loadout_blocks_action();
+  } else if ( action_category == "loadout_slots_category" ) {
+    choose_loadout_slots_action();
   } else {
     choose_inventory_action();
   }
@@ -267,17 +287,31 @@ void AutoEquipUi::choose_soldier_action() {
   switch( action_token ) {
     case 's': increment_cursor_and_offset( soldier_cursor, soldiers_offset, master_soldier_list.get_operative_count() ); display_soldiers(); break;
     case 'w': decrement_cursor_and_offset( soldier_cursor, soldiers_offset ); display_soldiers(); break;
-    case 't': display_loadout(); break;
+    case 't': display_loadout_blocks(); break;
     default: display_soldiers(); break;
   }
 }
 
-void AutoEquipUi::choose_loadout_action() {
+void AutoEquipUi::choose_loadout_blocks_action() {
   switch( action_token ) {
-    case 's': display_loadout(); break;
-    case 'w': display_loadout(); break;
+    case 'a': update_loadout_block_left(); display_loadout_blocks(); break;
+    case 'd': update_loadout_block_right(); display_loadout_blocks(); break;
+    case 'w': update_loadout_block_up(); display_loadout_blocks(); break;
+    case 's': update_loadout_block_down(); display_loadout_blocks(); break;
+    case 't': display_loadout_slots(); break;
+    default: display_loadout_blocks(); break;
+  }
+}
+
+void AutoEquipUi::choose_loadout_slots_action() {
+  switch( action_token ) {
+    case 'a': update_loadout_cursor_left(); display_loadout_slots(); break;
+    case 'd': update_loadout_cursor_right(); display_loadout_slots(); break;
+    case 'w': update_loadout_cursor_up(); display_loadout_slots(); break;
+    case 's': update_loadout_cursor_down(); display_loadout_slots(); break;
+    case 'r': display_loadout_blocks(); break;
     case 't': display_inventory(); break;
-    default: display_loadout(); break;
+    default: display_loadout_slots(); break;
   }
 }
 
@@ -300,31 +334,229 @@ void AutoEquipUi::decrement_cursor_and_offset( int &cursor, int &offset ) {
   }
 }
 
-void AutoEquipUi::update_loadout_block_and_cursor() {
+void AutoEquipUi::update_loadout_block_left() {
   if( loadout_block == "right_shoulder" ) {
-    place_cursor_in_right_shoulder();
+    loadout_block = "right_shoulder";
   } else if( loadout_block == "left_shoulder" ) {
-    place_cursor_in_left_shoulder();
+    loadout_block = "right_shoulder";
   } else if( loadout_block == "right_leg" ) {
-    place_cursor_in_right_leg();
+    loadout_block = "right_leg";
   } else if( loadout_block == "left_leg" ) {
-    place_cursor_in_left_leg();
+    loadout_block = "right_leg";
   } else if( loadout_block == "right_hand" ) {
-    place_cursor_in_right_hand();
+    loadout_block = "right_hand";
   } else if( loadout_block == "left_hand" ) {
-    place_cursor_in_left_hand();
+    loadout_block = "right_hand";
   } else if( loadout_block == "backpack" ) {
-    place_cursor_in_backpack();
+    loadout_block = "left_shoulder";
   } else if( loadout_block == "belt" ) {
-    place_cursor_in_belt();
+    loadout_block = "left_leg";
+  } else {
+    loadout_block = "right_shoulder";
+  }
+  loadout_cursor = 0;
+}
+
+void AutoEquipUi::update_loadout_block_right() {
+  if( loadout_block == "right_shoulder" ) {
+    loadout_block = "left_shoulder";
+  } else if( loadout_block == "left_shoulder" ) {
+    loadout_block = "backpack";
+  } else if( loadout_block == "right_leg" ) {
+    loadout_block = "left_leg";
+  } else if( loadout_block == "left_leg" ) {
+    loadout_block = "belt";
+  } else if( loadout_block == "right_hand" ) {
+    loadout_block = "left_hand";
+  } else if( loadout_block == "left_hand" ) {
+    loadout_block = "backpack";
+  } else if( loadout_block == "backpack" ) {
+    loadout_block = "backpack";
+  } else if( loadout_block == "belt" ) {
+    loadout_block = "belt";
+  } else {
+    loadout_block = "right_shoulder";
+  }
+  loadout_cursor = 0;
+}
+
+void AutoEquipUi::update_loadout_block_up() {
+  if( loadout_block == "right_shoulder" ) {
+    loadout_block = "right_shoulder";
+  } else if( loadout_block == "left_shoulder" ) {
+    loadout_block = "left_shoulder";
+  } else if( loadout_block == "right_leg" ) {
+    loadout_block = "right_hand";
+  } else if( loadout_block == "left_leg" ) {
+    loadout_block = "left_hand";
+  } else if( loadout_block == "right_hand" ) {
+    loadout_block = "right_shoulder";
+  } else if( loadout_block == "left_hand" ) {
+    loadout_block = "left_shoulder";
+  } else if( loadout_block == "backpack" ) {
+    loadout_block = "backpack";
+  } else if( loadout_block == "belt" ) {
+    loadout_block = "backpack";
+  } else {
+    loadout_block = "right_shoulder";
+  }
+  loadout_cursor = 0;
+}
+
+void AutoEquipUi::update_loadout_block_down() {
+  if( loadout_block == "right_shoulder" ) {
+    loadout_block = "right_hand";
+  } else if( loadout_block == "left_shoulder" ) {
+    loadout_block = "left_hand";
+  } else if( loadout_block == "right_leg" ) {
+    loadout_block = "right_leg";
+  } else if( loadout_block == "left_leg" ) {
+    loadout_block = "left_leg";
+  } else if( loadout_block == "right_hand" ) {
+    loadout_block = "right_leg";
+  } else if( loadout_block == "left_hand" ) {
+    loadout_block = "left_leg";
+  } else if( loadout_block == "backpack" ) {
+    loadout_block = "belt";
+  } else if( loadout_block == "belt" ) {
+    loadout_block = "belt";
+  } else {
+    loadout_block = "right_shoulder";
+  }
+  loadout_cursor = 0;
+}
+
+void AutoEquipUi::update_loadout_cursor_left() {
+  if( loadout_block == "right_shoulder" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "left_shoulder" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "right_leg" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "left_leg" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "right_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "left_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "backpack" ) {
+    if( loadout_cursor % 3 > 0 ) {
+      loadout_cursor--;
+    } else {
+      loadout_cursor = loadout_cursor;
+    }
+  } else if( loadout_block == "belt" ) {
+    if( loadout_cursor >= 4 ) {
+      loadout_cursor = 4;
+    } else if( loadout_cursor > 0 ) {
+      loadout_cursor --;
+    } else {
+      loadout_cursor = 0;
+    }
   } else {
     loadout_block = "right_shoulder";
     loadout_cursor = 0;
-    place_cursor_in_right_shoulder();
   }
 }
 
-void AutoEquipUi::update_loadout_block_and_cursor( String neighbors
+void AutoEquipUi::update_loadout_cursor_right() {
+  if( loadout_block == "right_shoulder" ) {
+    loadout_cursor = 1;
+  } else if( loadout_block == "left_shoulder" ) {
+    loadout_cursor = 1;
+  } else if( loadout_block == "right_leg" ) {
+    loadout_cursor = 1;
+  } else if( loadout_block == "left_leg" ) {
+    loadout_cursor = 1;
+  } else if( loadout_block == "right_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "left_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "backpack" ) {
+    if( loadout_cursor % 3 < 2 ) {
+      loadout_cursor++;
+    } else {
+      loadout_cursor = loadout_cursor;
+    }
+  } else if( loadout_block == "belt" ) {
+    if( loadout_cursor > 3 ) {
+      loadout_cursor = 5;
+    } else if( loadout_cursor < 3 ) {
+      loadout_cursor ++;
+    } else {
+      loadout_cursor = 3;
+    }
+  } else {
+    loadout_block = "right_shoulder";
+    loadout_cursor = 0;
+  }
+}
+
+void AutoEquipUi::update_loadout_cursor_up() {
+  if( loadout_block == "right_shoulder" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "left_shoulder" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "right_leg" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "left_leg" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "right_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "left_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "backpack" ) {
+    if( loadout_cursor > 2 ) {
+      loadout_cursor -= 3;
+    } else {
+      loadout_cursor = loadout_cursor;
+    }
+  } else if( loadout_block == "belt" ) {
+    if( loadout_cursor == 4 ) {
+      loadout_cursor -= 4;
+    } else if( loadout_cursor == 5) {
+      loadout_cursor -= 2;
+    } else {
+      loadout_cursor = loadout_cursor;
+    }
+  } else {
+    loadout_block = "right_shoulder";
+    loadout_cursor = 0;
+  }
+}
+
+void AutoEquipUi::update_loadout_cursor_down() {
+  if( loadout_block == "right_shoulder" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "left_shoulder" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "right_leg" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "left_leg" ) {
+    loadout_cursor = loadout_cursor;
+  } else if( loadout_block == "right_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "left_hand" ) {
+    loadout_cursor = 0;
+  } else if( loadout_block == "backpack" ) {
+    if( loadout_cursor < 6 ) {
+      loadout_cursor += 3;
+    } else {
+      loadout_cursor = loadout_cursor;
+    }
+  } else if( loadout_block == "belt" ) {
+    if( loadout_cursor == 0 ) {
+      loadout_cursor += 4;
+    } else if( loadout_cursor == 3) {
+      loadout_cursor += 2;
+    } else {
+      loadout_cursor = loadout_cursor;
+    }
+  } else {
+    loadout_block = "right_shoulder";
+    loadout_cursor = 0;
+  }
+}
 
 int AutoEquipUi::take_over() {
   while( action_token != 'q' ) {
