@@ -11,12 +11,6 @@
 #include <strings.h>
 #include <time.h>
 #include <fstream>
-
-#include "master_soldier_items.h"
-
-#define AUTO_EQUIP_UI_LINE_SIZE       80
-#define AUTO_EQUIP_UI_MAX_SCREEN_SIZE 1599
-#define AUTO_EQUIP_UI_NUMBER_OF_LINES 20
 //#define AUTO_EQUIP_UI_MAX_SCREEN_SIZE 1999
 //#define AUTO_EQUIP_UI_NUMBER_OF_LINES 25
 #define SHOULDER_ROW                  1
@@ -33,19 +27,19 @@
 #define BELT_ROW                      12
 #define BELT_COLUMN                   36
 
+#include "master_soldier_items.h"
+#include "inventory_controller.h"
+#include "soldiers_controller.h"
+
 class AutoEquipUi {
   public:
     AutoEquipUi();
-    void display_inventory();
-    void display_soldiers();
     void display_loadout_blocks();
     void display_loadout_slots();
     int take_over();
   protected:
     void reset_screen_buffer();
     void display_loadout();
-    void increment_cursor_and_offset( int &cursor, int &offset, int total_objects );
-    void decrement_cursor_and_offset( int &cursor, int &offset );
     void update_loadout_block_left();
     void update_loadout_block_right();
     void update_loadout_block_up();
@@ -55,8 +49,6 @@ class AutoEquipUi {
     void update_loadout_cursor_up();
     void update_loadout_cursor_down();
     void route_category();
-    void choose_inventory_action();
-    void choose_soldier_action();
     void choose_loadout_blocks_action();
     void choose_loadout_slots_action();
     void draw_right_shoulder();
@@ -79,12 +71,12 @@ class AutoEquipUi {
     void place_cursor_in_backpack();
     void place_cursor_in_belt();
     void place_cursor( int row, int column );
-    int selected_item_id, selected_soldier_id;
-    int item_cursor, soldier_cursor, loadout_cursor;
-    int items_offset, soldiers_offset;
+    int loadout_cursor;
     String action_category, loadout_block;
     char action_token;
     MasterSoldierItems master_soldier_list;
+    InventoryController *inventory_controller;
+    SoldiersController *soldiers_controller;
     unsigned char screen_buffer[AUTO_EQUIP_UI_MAX_SCREEN_SIZE + 1];
 };
 #endif
