@@ -2,6 +2,9 @@
 
 using namespace std;
 
+int LoadoutController::cursor = 0;
+String LoadoutController::block = "right_shoulder";
+
 int main()
 {
   system("cls");

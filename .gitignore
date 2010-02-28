@@ -1,0 +1,11 @@
+*.cpp~
+*.h~
+*.lk1
+*.map
+*.obj
+*.tgt
+*.sym
+*.mk1
+*.mk
+*.wpj
+*.swp
